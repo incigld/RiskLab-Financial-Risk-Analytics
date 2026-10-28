@@ -5,9 +5,12 @@ import numpy as np
 import plotly.express as px
 
 st.set_page_config(
-    page_title="RiskLab",
+    page_title="RiskLab | Financial Risk Analytics",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    menu_items={
+        "About": "RiskLab — Financial Risk Analytics & Simulation Platform. Credit risk analysis, income shock simulations and early warning indicators."
+    }
 )
 
 st.markdown("""
