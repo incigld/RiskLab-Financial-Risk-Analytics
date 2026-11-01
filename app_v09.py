@@ -28,7 +28,10 @@ st.markdown("""
 
 # RISKLAB v0.6 - NAVIGATION
 
-st.sidebar.markdown("## ◈ RiskLab")
+st.sidebar.markdown(
+    "<div style='font-size: 32px; font-weight: 750; letter-spacing: -1px;'>◈ RiskLab</div>",
+    unsafe_allow_html=True
+)
 st.sidebar.caption("FINANCIAL RISK ANALYTICS")
 st.sidebar.divider()
 
