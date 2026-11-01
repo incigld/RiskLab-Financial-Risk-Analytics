@@ -28,29 +28,66 @@ st.markdown("""
 
 # RISKLAB v0.6 - NAVIGATION
 
-st.sidebar.title("RiskLab")
-st.sidebar.caption("Financial Risk Analytics")
+st.sidebar.markdown("## ◈ RiskLab")
+st.sidebar.caption("FINANCIAL RISK ANALYTICS")
+st.sidebar.divider()
 
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Overview",
+navigation_groups = {
+    "DASHBOARD": [
+        "Overview"
+    ],
+    "RISK ANALYTICS": [
         "Credit Risk",
         "Stress Testing",
         "Risk Migration",
         "Portfolio Insights",
         "Early Warning Radar"
     ],
-    key="main_navigation"
-)
+    "DECISION SUPPORT": [
+        "Risk Mitigation Simulator",
+        "What-If Scenario Builder"
+
+    ]
+}
+
+page_icons = {
+    "Overview": ":material/dashboard: Overview",
+    "Credit Risk": ":material/account_balance: Credit Risk",
+    "Stress Testing": ":material/monitoring: Stress Testing",
+    "Risk Migration": ":material/swap_horiz: Risk Migration",
+    "Portfolio Insights": ":material/pie_chart: Portfolio Insights",
+    "Early Warning Radar": ":material/notification_important: Early Warning Radar",
+    "Risk Mitigation Simulator": ":material/tune: Risk Mitigation Simulator",
+    "What-If Scenario Builder": ":material/compare_arrows: What-If Scenario Builder"
+
+}
+
+if "selected_page" not in st.session_state:
+    st.session_state.selected_page = "Overview"
+
+for group_name, group_pages in navigation_groups.items():
+    st.sidebar.caption(group_name)
+
+    for page_name in group_pages:
+        is_active = st.session_state.selected_page == page_name
+
+        if st.sidebar.button(
+            page_icons[page_name],
+            key=f"nav_button_{page_name}",
+            use_container_width=True,
+            type="primary" if is_active else "secondary"
+        ):
+            st.session_state.selected_page = page_name
+            st.rerun()
+
+page = st.session_state.selected_page
 
 st.title("RiskLab | Credit Risk")
 st.caption("Financial Risk Analytics Platform - Demo")
 
-# Tekrarlanabilir ornek portfoy
+# Sample Portfolio Generation
 
-
-# RISKLAB - DATA IMPORT
+# Data Import
 
 st.sidebar.header("Portfolio Data")
 
@@ -90,7 +127,7 @@ if uploaded_file is not None:
 
         if eksik:
             st.error(
-                "Eksik sutunlar: " + ", ".join(eksik)
+                "Missing columns: " + ", ".join(eksik)
             )
             st.stop()
 
@@ -110,26 +147,26 @@ if uploaded_file is not None:
 
         if hatali.any():
             st.error(
-                f"{hatali.sum()} satirda eksik "
-                "veya gecersiz veri bulundu."
+                f"{hatali.sum()} rows contain missing "
+                "or invalid data."
             )
             st.stop()
 
         if yeni_df.empty:
-            st.error("Yuklenen dosya bos.")
+            st.error("Uploaded file is empty.")
             st.stop()
 
         if yeni_df["Musteri"].duplicated().any():
-            st.error("Tekrarlanan Musteri ID bulundu.")
+            st.error("Duplicate Customer IDs found.")
             st.stop()
 
         df = yeni_df.copy()
         st.sidebar.success(
-            f"{len(df)} musteri yuklendi!"
+            f"{len(df)} customers uploaded successfully!"
         )
 
     except Exception as e:
-        st.error(f"Dosya okunamadi: {e}")
+        st.error(f"Unable to read file: {e}")
         st.stop()
 
 st.sidebar.header("Stress Test")
@@ -142,10 +179,10 @@ gelir_dususu = st.sidebar.slider(
     step=5
 )
 
-def risk_hesapla(data, dusus):
+def risk_hesapla(data, dusus, taksit_degisim=0):
     sonuc = data.copy()
     sonuc["DTI"] = (
-        sonuc["Aylik_Borc"] /
+        (sonuc["Aylik_Borc"] * (1 + taksit_degisim / 100)) /
         (sonuc["Gelir"] * (1 - dusus / 100))
     )
 
@@ -227,6 +264,11 @@ if page == "Overview":
 
 if page == "Stress Testing":
     st.header("Stress Testing")
+    
+    loss_delta_pct = (
+        (kriz_kayip / normal_kayip - 1) * 100
+        if normal_kayip > 0 else 0
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -235,19 +277,25 @@ if page == "Stress Testing":
                 f"{normal_kayip:,.0f} TL")
     col3.metric("Stressed Expected Loss",
                 f"{kriz_kayip:,.0f} TL",
-                delta=f"{(kriz_kayip / normal_kayip - 1)*100:.1f}%",
+                delta=f"{loss_delta_pct:.1f}%",
                 delta_color="inverse")
 
     risk_sayilari = (
         kriz["Risk"].value_counts()
         .rename_axis("Risk")
-        .reset_index(name="Musteri_Sayisi")
+        .reset_index(name="Number of Customers")
     )
+
+    risk_sayilari["Risk"] = risk_sayilari["Risk"].replace({
+        "Dusuk": "Low",
+        "Orta": "Medium",
+        "Yuksek": "High"
+    })
 
     fig = px.bar(
         risk_sayilari,
         x="Risk",
-        y="Musteri_Sayisi",
+        y="Number of Customers",
         title="Credit Risk Distribution",
         color="Risk"
     )
@@ -280,15 +328,15 @@ if page == "Credit Risk":
                     hide_index=True
                 )
                 st.download_button(
-                    "CSV Raporunu Indir",
+                    "Download CSV Report",
                     display_portfolio.to_csv(index=False).encode("utf-8-sig"),
                     "risklab_rapor.csv",
                     "text/csv"
                 )
 
                 st.info(
-                    "Bu uygulama sentetik veriler ve "
-                    "varsayimsal risk parametreleri kullanir."
+                    "This application uses synthetic data and "
+                    "assumed risk parameters."
                 )
 
                 # RISKLAB - CUSTOMER RISK INVESTIGATION
@@ -315,7 +363,7 @@ if page == "Credit Risk":
                 else:
                     filtreli = kriz[kriz["Risk"] == risk_secimi].copy()
 
-                st.write("Filtrelenen musteri sayisi:", len(filtreli))
+                st.write("Filtered Customer Count:", len(filtreli))
 
                 filtered_display = filtreli.sort_values(
                     "Beklenen_Kayip", ascending=False
@@ -342,7 +390,7 @@ if page == "Credit Risk":
 
                 if not filtreli.empty:
                     musteri_id = st.selectbox(
-                        "Detaylarini incelemek istedigin musteri",
+                        "Select a Customer to View Details",
                         filtreli["Musteri"].tolist()
                     )
 
@@ -352,31 +400,38 @@ if page == "Credit Risk":
 
                     col1, col2, col3 = st.columns(3)
 
-                    col1.metric("Risk Seviyesi", musteri["Risk"])
-                    col2.metric("Borc / Gelir", f'%{musteri["DTI"] * 100:.1f}')
+                    risk_english = {
+                        "Dusuk": "Low",
+                        "Orta": "Medium",
+                        "Yuksek": "High"
+                    }
+
+                    col1.metric("Risk Level", risk_english[musteri["Risk"]])
+                    col2.metric("Debt-to-Income Ratio", f'{musteri["DTI"] * 100:.1f}%')
                     col3.metric(
-                        "Beklenen Kayip",
+                        "Expected Loss",
                         f'{musteri["Beklenen_Kayip"]:,.0f} TL'
                     )
 
-                    st.subheader("Risk Aciklamasi")
+                    st.subheader("Risk Assessment")
 
                     if musteri["DTI"] >= 0.50:
                         st.error(
-                            "Yuksek risk: Aylik borc odemeleri "
-                            "gelirin en az %50'sine esit."
+                            "High Risk: Monthly debt payments account "
+                            "for at least 50% of monthly income."
                         )
                     elif musteri["DTI"] >= 0.30:
                         st.warning(
-                            "Orta risk: Borc / gelir orani "
-                            "%30 ile %50 arasinda."
+                            "Medium Risk: The debt-to-income ratio "
+                            "is between 30% and 50%."
                         )
                     else:
                         st.success(
-                            "Dusuk risk: Borc / gelir orani %30'un altinda."
+                            "Low Risk: The debt-to-income ratio "
+                            "is below 30%."
                         )
                 else:
-                    st.info("Bu risk seviyesinde musteri bulunamadi.")
+                    st.info("No customers found in the selected risk category.")
 
   
 if page == "Risk Migration":
@@ -427,6 +482,11 @@ if page == "Risk Migration":
         fill_value=0
     )
 
+    gecis_tablosu = gecis_tablosu.rename(
+        index={"Dusuk": "Low", "Orta": "Medium", "Yuksek": "High"},
+        columns={"Dusuk": "Low", "Orta": "Medium", "Yuksek": "High"}
+    )
+
     fig_gecis = px.imshow(
         gecis_tablosu,
         text_auto=True,
@@ -449,7 +509,15 @@ if page == "Risk Migration":
     st.dataframe(
         karsilastirma[
             ["Musteri", "Normal_Risk", "Kriz_Risk"]
-        ],
+        ].replace({
+            "Dusuk": "Low",
+            "Orta": "Medium",
+            "Yuksek": "High"
+        }).rename(columns={
+            "Musteri": "Customer ID",
+            "Normal_Risk": "Baseline Risk",
+            "Kriz_Risk": "Stressed Risk"
+        }),
         hide_index=True,
         use_container_width=True
     )
@@ -586,6 +654,12 @@ if page == "Portfolio Insights":
                     .reset_index()
                 )
 
+                risk_exposure["Risk"] = risk_exposure["Risk"].replace({
+                    "Dusuk": "Low",
+                    "Orta": "Medium",
+                    "Yuksek": "High"
+                })
+
                 fig_exposure = px.pie(
                     risk_exposure,
                     names="Risk",
@@ -670,24 +744,48 @@ if page == "Early Warning Radar":
         ascending=True
     )
 
+    def warning_severity(threshold):
+        if threshold <= 3:
+            return "Critical"
+        elif threshold <= 7:
+            return "High Alert"
+        else:
+            return "Watchlist"
+
+    fragile_df["Warning_Severity"] = fragile_df[
+        "Income_Shock_Threshold"
+    ].apply(warning_severity)
+
+    critical_customers = (fragile_df["Warning_Severity"] == "Critical").sum()
+
+    st.warning(
+        f"Critical Alert: {critical_customers} customers "
+        "are within a 3% additional income shock "
+        "of the high-risk threshold."
+    )
+
     st.dataframe(
         fragile_df[[
             "Musteri",
+            "Warning_Severity",
             "DTI",
             "Income_Shock_Threshold",
             "Kredi_Bakiyesi"
         ]],
         column_config={
             "Musteri": "Customer ID",
+            "Warning_Severity": "Warning Severity",
             "DTI": st.column_config.NumberColumn(
                 "Debt-to-Income Ratio",
                 format="%.2f"
             ),
-            "Income_Shock_Threshold": st.column_config.NumberColumn(
+           "Income_Shock_Threshold": st.column_config.ProgressColumn(
                 "Additional Income Shock (%)",
+                min_value=0,
+                max_value=30,
                 format="%.2f%%"
             ),
-            "Kredi_Bakiyesi": st.column_config.NumberColumn(
+                        "Kredi_Bakiyesi": st.column_config.NumberColumn(
                 "Credit Exposure",
                 format="%.0f"
             )
@@ -695,4 +793,505 @@ if page == "Early Warning Radar":
         width="stretch",
         hide_index=True
     )
-      
+    
+if page == "Risk Mitigation Simulator":
+    st.header("Risk Mitigation Simulator")
+
+    st.caption(
+        "Simulate credit risk mitigation strategies "
+        "and evaluate their impact on portfolio risk."
+    )
+
+    st.subheader("Payment Restructuring Scenario")
+
+    restructuring_strategy = st.radio(
+        "Restructuring Strategy",
+        ["Portfolio-wide", "Targeted High-Risk"],
+        horizontal=True
+    )
+
+    if restructuring_strategy == "Targeted High-Risk":
+        st.info(
+            "Targeted Strategy: Payment reductions are applied "
+            "only to customers classified as High Risk "
+            "before restructuring. Medium- and Low-Risk "
+            "customers remain unchanged."
+        )
+    else:
+        st.info(
+            "Portfolio-wide Strategy: Payment reductions "
+            "are applied equally to all customers, "
+            "regardless of their risk classification."
+        )
+
+    payment_reduction = st.slider(
+        "Monthly Payment Reduction (%)",
+        min_value=0,
+        max_value=50,
+        value=0,
+        step=5
+    )
+
+    if restructuring_strategy == "Targeted High-Risk":
+        reduction_rate = (
+            (kriz["Risk"] == "Yuksek").astype(float)
+            * payment_reduction / 100
+        )
+    else:
+        reduction_rate = payment_reduction / 100
+
+    simulated_payment = (
+        kriz["Aylik_Borc"] * (1 - reduction_rate)
+    )
+
+    if restructuring_strategy == "Targeted High-Risk":
+        targeted_customers = (kriz["Risk"] == "Yuksek").sum()
+    else:
+        targeted_customers = len(kriz)
+
+    st.metric(
+        "Customers Targeted",
+        f"{targeted_customers:,}"
+    )
+
+    simulated_dti = simulated_payment / (
+        kriz["Gelir"] * (1 - gelir_dususu / 100)
+    )
+
+    st.subheader("DTI Comparison")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            "Current Average DTI",
+            f"{kriz['DTI'].mean() * 100:.2f}%"
+        )
+
+    with col2:
+        st.metric(
+            "Restructured Average DTI",
+            f"{simulated_dti.mean() * 100:.2f}%",
+            delta=f"{(simulated_dti.mean() - kriz['DTI'].mean()) * 100:.2f} pp",
+            delta_color="inverse"
+        )
+
+    simulated_risk = simulated_dti.apply(
+        lambda dti: "Dusuk" if dti < 0.30
+        else "Orta" if dti < 0.50
+        else "Yuksek"
+    )
+
+    simulated_pd = simulated_risk.map({
+        "Dusuk": 0.02,
+        "Orta": 0.08,
+        "Yuksek": 0.20
+    })
+
+    before_expected_loss = kriz["Beklenen_Kayip"].sum()
+
+    after_expected_loss = (
+        simulated_pd * 0.45 * kriz["Kredi_Bakiyesi"]
+    ).sum()
+
+    improved_customers = (
+        (kriz["Risk"] == "Yuksek") &
+        (simulated_risk != "Yuksek")
+    ).sum()
+
+    st.metric(
+        "High-Risk Customers Improved",
+        f"{improved_customers:,}",
+        help="Number of customers moving from High Risk to Medium or Low Risk after payment restructuring."
+    )
+
+    high_to_medium = (
+        (kriz["Risk"] == "Yuksek") &
+        (simulated_risk == "Orta")
+    ).sum()
+
+    high_to_low = (
+        (kriz["Risk"] == "Yuksek") &
+        (simulated_risk == "Dusuk")
+    ).sum()
+
+    st.subheader("Risk Migration After Restructuring")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("High → Medium", f"{high_to_medium:,}")
+
+    with col2:
+        st.metric("High → Low", f"{high_to_low:,}")
+
+    original_monthly_payment = kriz["Aylik_Borc"].sum()
+
+    restructured_monthly_payment = simulated_payment.sum()
+
+    monthly_cashflow_reduction = (
+        original_monthly_payment - restructured_monthly_payment
+    )
+
+    st.subheader("Expected Loss Impact")
+
+    st.caption(
+        "Model-implied expected loss comparison based on "
+        "illustrative DTI-to-PD assumptions. "
+        "Payment restructuring does not guarantee an "
+        "equivalent reduction in actual default risk."
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric(
+        "Before Expected Loss",
+        f"{before_expected_loss:,.0f} TL"
+    )
+
+    col2.metric(
+        "After Expected Loss",
+        f"{after_expected_loss:,.0f} TL"
+    )
+
+    loss_change_pct = (
+        (after_expected_loss / before_expected_loss - 1) * 100
+        if before_expected_loss > 0 else 0
+    )
+
+    col3.metric(
+        "Expected Loss Change",
+        f"{loss_change_pct:+.2f}%"
+    )
+
+    st.caption(
+        "Illustrative expected loss based on assumed PD and LGD. "
+        "This does not represent a validated forecast of actual credit losses."
+    )
+
+    st.subheader("Restructuring Financial Impact")
+
+    st.metric(
+        "Monthly Cash Flow Reduction",
+        f"{monthly_cashflow_reduction:,.0f} TL"
+    )
+
+    cashflow_per_improved_customer = (
+        monthly_cashflow_reduction / improved_customers
+        if improved_customers > 0 else 0
+    )
+
+    st.metric(
+        "Monthly Cash Flow Reduction per Improved Customer",
+        f"{cashflow_per_improved_customer:,.0f} TL"
+    )
+
+    st.subheader("Restructuring Strategy Comparison")
+
+    portfolio_dti = (
+        kriz["DTI"] * (1 - payment_reduction / 100)
+    )
+
+    targeted_dti = kriz["DTI"].copy()
+
+    targeted_dti.loc[kriz["Risk"] == "Yuksek"] *= (
+        1 - payment_reduction / 100
+    )
+
+    portfolio_improved = (
+        (kriz["Risk"] == "Yuksek") &
+        (portfolio_dti < 0.50)
+    ).sum()
+
+    targeted_improved = (
+        (kriz["Risk"] == "Yuksek") &
+        (targeted_dti < 0.50)
+    ).sum()
+
+    portfolio_cashflow_reduction = (
+        kriz["Aylik_Borc"].sum() * payment_reduction / 100
+    )
+
+    targeted_cashflow_reduction = (
+        kriz.loc[
+            kriz["Risk"] == "Yuksek", "Aylik_Borc"
+        ].sum() * payment_reduction / 100
+    )
+
+    comparison_df = pd.DataFrame({
+        "Strategy": [
+            "Portfolio-wide",
+            "Targeted High-Risk"
+        ],
+        "Customers Targeted": [
+            len(kriz),
+            (kriz["Risk"] == "Yuksek").sum()
+        ],
+        "Improved Customers": [
+            portfolio_improved,
+            targeted_improved
+        ],
+        "Monthly Cash Flow Reduction (TL)": [
+            portfolio_cashflow_reduction,
+            targeted_cashflow_reduction
+        ]
+        
+    })
+
+    st.dataframe(
+        comparison_df,
+        hide_index=True,
+        width="stretch"
+    )   
+
+    st.subheader("Automated Strategy Assessment")
+
+    if portfolio_improved == 0 and targeted_improved == 0:
+        st.info(
+            "No high-risk customers move to a lower risk "
+            "category under the selected payment reduction."
+        )
+
+    elif (
+        portfolio_improved == targeted_improved
+        and targeted_cashflow_reduction < portfolio_cashflow_reduction
+    ):
+        st.success(
+            "Targeted High-Risk restructuring achieves "
+            "the same number of high-risk customer improvements "
+            "with a lower monthly cash flow reduction "
+            "than Portfolio-wide restructuring."
+        )
+
+    else:
+        st.info(
+            "Review the strategy comparison table to assess "
+            "the trade-off between risk classification "
+            "improvements and monthly cash flow reduction."
+        )
+
+    st.subheader("Strategy Efficiency Analysis")
+
+    portfolio_efficiency = (
+        portfolio_improved / (portfolio_cashflow_reduction / 1_000_000)
+        if portfolio_cashflow_reduction > 0 else 0
+    )
+
+    targeted_efficiency = (
+        targeted_improved / (targeted_cashflow_reduction / 1_000_000)
+        if targeted_cashflow_reduction > 0 else 0
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric(
+            "Portfolio-wide Efficiency",
+            f"{portfolio_efficiency:.2f}"
+        )
+
+    with col2:
+        st.metric(
+            "Targeted Efficiency",
+            f"{targeted_efficiency:.2f}"
+        )
+
+    st.caption(
+        "Customers moving out of the High-Risk category "
+        "per 1 million TL of monthly cash flow reduction. "
+        "This is not a measure of profitability or actual credit loss reduction."
+    )  
+
+    st.subheader("Decision Summary")
+
+    if portfolio_improved == 0 and targeted_improved == 0:
+        st.info(
+            "Decision: Neither strategy improves the "
+            "High-Risk classification under this scenario."
+        )
+
+    elif targeted_efficiency > portfolio_efficiency:
+        st.success(
+            "Scenario Assessment: Targeted High-Risk "
+            "restructuring is more efficient under the "
+            "selected assumptions, achieving more "
+            "classification improvements per 1 million TL "
+            "of monthly cash flow reduction."
+        )
+
+    else:
+        st.info(
+            "Scenario Assessment: No clear efficiency "
+            "advantage is identified between the strategies."
+        )
+
+    st.caption(
+        "Decision-support simulation only. Results are based "
+        "on illustrative DTI thresholds and synthetic data. "
+        "Changes in risk classification do not establish "
+        "changes in actual default probability. "
+        "Loan maturity, interest costs and economic "
+        "restructuring costs are not modeled."
+    )
+
+
+if page == "What-If Scenario Builder":
+    st.header("Scenario Comparison Lab")
+    st.caption(
+        "Compare alternative economic scenarios "
+        "and evaluate their impact on credit risk."
+    )
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.subheader("Scenario A")
+        income_a = st.slider(
+            "Income Reduction A (%)", 0, 60, 15, 5
+        )
+        payment_a = st.slider(
+            "Monthly Payment Change A (%)", -50, 50, 5, 5
+        )
+
+    with col_b:
+        st.subheader("Scenario B")
+        income_b = st.slider(
+            "Income Reduction B (%)", 0, 60, 35, 5
+        )
+        payment_b = st.slider(
+            "Monthly Payment Change B (%)", -50, 50, 15, 5
+        )
+
+    baseline = risk_hesapla(df, 0, 0)
+    scenario_a = risk_hesapla(df, income_a, payment_a)
+    scenario_b = risk_hesapla(df, income_b, payment_b)
+
+    st.subheader("Scenario Comparison")
+
+    comparison = pd.DataFrame({
+        "Scenario": ["Baseline", "Scenario A", "Scenario B"],
+        "High-Risk Customers": [
+            (baseline["Risk"] == "Yuksek").sum(),
+            (scenario_a["Risk"] == "Yuksek").sum(),
+            (scenario_b["Risk"] == "Yuksek").sum()
+        ],
+        "Expected Loss (TL)": [
+            baseline["Beklenen_Kayip"].sum(),
+            scenario_a["Beklenen_Kayip"].sum(),
+            scenario_b["Beklenen_Kayip"].sum()
+        ]
+    })
+
+    st.dataframe(comparison, hide_index=True, width="stretch")
+
+    st.subheader("Risk Migration Comparison")
+
+    risk_order = {"Dusuk": 0, "Orta": 1, "Yuksek": 2}
+
+    baseline_level = baseline["Risk"].map(risk_order)
+
+    migration_data = []
+
+    for name, scenario in [
+        ("Scenario A", scenario_a),
+        ("Scenario B", scenario_b)
+    ]:
+        scenario_level = scenario["Risk"].map(risk_order)
+
+        migration_data.append({
+            "Scenario": name,
+            "Risk Increased": (scenario_level > baseline_level).sum(),
+            "Risk Decreased": (scenario_level < baseline_level).sum(),
+            "Unchanged": (scenario_level == baseline_level).sum()
+        })
+
+    st.dataframe(
+        pd.DataFrame(migration_data),
+        hide_index=True,
+        width="stretch"
+    )
+
+    migration_chart = pd.DataFrame(migration_data).set_index("Scenario")
+
+    st.bar_chart(
+        migration_chart[["Risk Increased", "Risk Decreased"]],
+        x_label="Scenario",
+        y_label="Number of Customers"
+    )
+
+
+    st.divider()
+    st.subheader("Reverse Stress Testing")
+
+    st.caption(
+        "Identify the income shock required to reach "
+        "a selected High-Risk portfolio threshold."
+    )
+
+    target_high_risk = st.slider(
+        "Target High-Risk Customer Ratio (%)",
+        min_value=10,
+        max_value=100,
+        value=40,
+        step=5
+    )
+ 
+    required_shock = None
+
+    for shock in range(0, 61):
+        stressed = risk_hesapla(df, shock, 0)
+
+        high_risk_ratio = (
+            (stressed["Risk"] == "Yuksek").mean() * 100
+        )
+
+        if high_risk_ratio >= target_high_risk:
+            required_shock = shock
+            break
+
+    if required_shock == 0:
+        st.info(
+            "The selected High-Risk threshold is already "
+            "reached under baseline conditions. "
+            "No additional income shock is required."
+        )
+
+    elif required_shock is not None:
+        st.metric(
+            "Required Income Reduction",
+            f"{required_shock}%"
+        )
+
+        st.success(
+            f"A {required_shock}% income reduction is sufficient "
+            f"to reach or exceed the selected "
+            f"{target_high_risk}% High-Risk customer threshold."
+        )
+    else:
+        st.warning(
+            "The selected High-Risk threshold is not reached "
+            "within the tested income reduction range of 0–60%."
+        )
+
+    shock_results = []
+
+    for shock in range(0, 61):
+        stressed = risk_hesapla(df, shock, 0)
+
+        shock_results.append({
+            "Income Reduction (%)": shock,
+            "High-Risk Customers (%)": (
+                (stressed["Risk"] == "Yuksek").mean() * 100
+            ),
+            "Target Threshold (%)": target_high_risk
+        })
+
+    shock_chart = pd.DataFrame(shock_results).set_index(
+        "Income Reduction (%)"
+    )
+
+    st.line_chart(
+        shock_chart,
+        x_label="Income Reduction (%)",
+        y_label="High-Risk Customers (%)"
+    )
