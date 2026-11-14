@@ -33,9 +33,13 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 90px;
+      padding-bottom: 50px;
     }
-    .brand { font-size: 25px; font-weight: 800; letter-spacing: -1px; }
+    .brand {
+      font-size: clamp(34px, 4vw, 46px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+    }
     .brand span { color: #55e2c1; }
     .tag {
       border: 1px solid #294257;
@@ -51,43 +55,81 @@
       letter-spacing: 3px;
     }
     h1 {
-      font-size: clamp(44px, 8vw, 88px);
-      line-height: 1.08;
-      letter-spacing: -3px;
+      font-size: clamp(42px, 6.5vw, 76px);
+      line-height: 1.12;
+      letter-spacing: -2px;
       margin: 25px 0;
     }
     h1 span { color: #55e2c1; }
     .intro {
       max-width: 640px;
       color: #a5b6c9;
-      font-size: 19px;
-      line-height: 1.8;
-    }
+      font-size: 17px;
+      line-height: 1.7;
+    }   
     .actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 36px; }
+
     .btn {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       text-decoration: none;
-      padding: 16px 25px;
-      border-radius: 10px;
-      font-weight: 700;
+      padding: 19px 34px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 750;
+      transition: transform 0.2s ease, background 0.2s ease;
     }
-    .primary { background: #55e2c1; color: #081522; }
+
+    .primary {
+      background: #55e2c1;
+      color: #081522;
+    }
+
+    .primary:hover {
+      background: #78f2d7;
+      transform: translateY(-2px);
+    }
+
     .secondary { border: 1px solid #35516a; color: #e8f3ff; }
     .features {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 18px;
-      margin-top: 100px;
+      margin-top: 75px;
     }
+
     .feature {
       background: #111d30;
       border: 1px solid #23354d;
       border-radius: 16px;
       padding: 28px;
+      transition: transform 0.25s ease, border-color 0.25s ease;
     }
-    .number { color: #55e2c1; font-size: 13px; font-weight: 700; }
-    .feature h2 { font-size: 21px; margin-top: 22px; }
-    .feature p { color: #a5b6c9; line-height: 1.7; font-size: 14px; }
+
+    .feature:hover {
+      transform: translateY(-5px);
+      border-color: #55e2c1;
+    }
+
+    .number {
+      color: #55e2c1;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .feature h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-top: 22px;
+    }
+
+    .feature p {
+      color: #a5b6c9;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
     footer {
       border-top: 1px solid #23354d;
       margin-top: 80px;
@@ -102,13 +144,41 @@
       .intro { font-size: 16px; }
       .tag { display: none; }
     }
+        .tech-stack {
+      margin-top: 55px;
+      text-align: center;
+      color: #6e849d;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .tech-stack span {
+      display: block;
+      margin-top: 12px;
+      color: #a5b6c9;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+    .feature-icon {
+      width: 36px;
+      height: 36px;
+      color: #55e2c1;
+      margin: 0 auto 20px;
+    }
+
+    .feature-icon svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <div class="brand">Risk<span>Lab.</span></div>
-      <div class="tag">FINANCIAL RISK ANALYTICS PLATFORM</div>
     </header>
 
     <main>
@@ -121,32 +191,78 @@
       </p>
 
       <div class="actions">
-        <a href="https://risklab-financial-analytics.streamlit.app/"
-   target="_self"
-   class="btn">
-   Launch RiskLab
-</a>
+        <a
+          href="https://risklab-financial-analytics-v2.streamlit.app/"
+          target="_self"
+          class="btn primary"
+        >
+          Launch RiskLab ↗
+        </a>
         
       </div>
 
-      <section class="features">
-        <div class="feature">
-          <div class="number">01 / CREDIT RISK</div>
-          <h2>Credit Risk Analysis</h2>
-          <p>Explore debt-to-income ratios, credit balances and customer-level risk indicators.</p>
+
+
+    <section class="features">
+
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="m7 16 4-5 4 3 5-7"/>
+          </svg>
         </div>
-        <div class="feature">
-          <div class="number">02 / STRESS TESTING</div>
-          <h2>Income Shock Simulation</h2>
-          <p>Simulate changes in customer income and assess potential credit vulnerability.</p>
+        <div class="number">01 / DASHBOARD</div>
+        <h2>Portfolio Monitoring</h2>
+        <p>
+          Monitor credit exposure, payment delinquencies
+          and historical loan migration through
+          interactive dashboards.
+        </p>
+      </div>
+
+      <div class="feature">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
         </div>
+        <div class="number">02 / RISK ANALYTICS</div>
+        <h2>Risk Assessment</h2>
+        <p>
+          Analyze credit risk, portfolio concentration,
+          stress scenarios and early warning indicators.
+        </p>
+      </div>
         <div class="feature">
-          <div class="number">03 / EARLY WARNING</div>
-          <h2>Risk Monitoring</h2>
-          <p>Identify financially fragile customers and monitor exposure to potential stress.</p>
-        </div>
-      </section>
-    </main>
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="1.7"
+                stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7h16m0 0-4-4m4 4-4 4"/>
+              <path d="M20 17H4m0 0 4-4m-4 4 4 4"/>
+            </svg>
+          </div>
+
+        <div class="number">03 / DECISION SUPPORT</div>
+        <h2>Scenario Simulation</h2>
+        <p>
+          Explore what-if scenarios, simulate income
+          shocks and evaluate potential risk
+          mitigation measures.
+        </p>
+      </div>
+
+    </section>
+
+          <div class="tech-stack">
+      BUILT WITH
+      <span>Python · SQL · Streamlit · Pandas · Plotly</span>
+    </div>
+        </main>
 
     <footer>© 2026 RiskLab · Financial Risk Analytics & Simulation</footer>
   </div>
